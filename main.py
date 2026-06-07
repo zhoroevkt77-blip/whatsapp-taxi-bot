@@ -425,7 +425,8 @@ def main():
                 delete_notification(receipt_id)
                 continue
 
-            if type_webhook == "incomingMessageReceived":
+            print(f"WEBHOOK: {type_webhook} | body: {body}")
+if type_webhook == "incomingMessageReceived":
     sender = body.get("senderData", {})
     chat_id = sender.get("chatId")
     sender_id = sender.get("sender", "")
