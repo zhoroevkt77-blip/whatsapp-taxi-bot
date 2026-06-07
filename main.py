@@ -430,7 +430,10 @@ def main():
         try:
             type_webhook = body.get("typeWebhook")
 
-            if type_webhook == "incomingMessageReceived":
+.   if if type_webhook in ("outgoingMessageReceived", "outgoingAPIMessageReceived"):
+    delete_notification(receipt_id)
+    continue
+    if type_webhook == "incomingMessageReceived":
                 sender = body.get("senderData", {})
                 chat_id = sender.get("chatId")
                 msg_data = body.get("messageData", {})
