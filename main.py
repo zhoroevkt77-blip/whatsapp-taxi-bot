@@ -426,8 +426,12 @@ def main():
                 continue
 
             if type_webhook == "incomingMessageReceived":
-                sender = body.get("senderData", {})
-                chat_id = sender.get("chatId")
+    sender = body.get("senderData", {})
+    chat_id = sender.get("chatId")
+    sender_id = sender.get("sender", "")
+    if ADMIN_PHONE in sender_id and chat_id and ADMIN_PHONE in chat_id:
+        delete_notification(receipt_id)
+        continue
                 msg_data = body.get("messageData", {})
                 msg_type = msg_data.get("typeMessage")
 
