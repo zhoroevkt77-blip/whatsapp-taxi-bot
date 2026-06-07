@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ================= КОНФИГУРАЦИЯ =================
 INSTANCE_ID = os.getenv("INSTANCE_ID", "7107626489")
 API_TOKEN = os.getenv("API_TOKEN")
 if not API_TOKEN:
@@ -16,10 +15,8 @@ if not API_TOKEN:
 
 GROUP_ID = os.getenv("GROUP_ID")
 ADMIN_PHONE = os.getenv("ADMIN_PHONE", "996227155603")
-
 BASE_URL = f"https://api.green-api.com/waInstance{INSTANCE_ID}"
 
-# ================= REGIONS =================
 regions = {
     "Баткен облусу": ["Баткен", "Кадамжай", "Лейлек (Раззаков)", "Кызыл-Кыя", "Сүлүктү"],
     "Жалал-Абад облусу": ["Манас", "Сузак", "Базар-Коргон", "Ноокен", "Кара-Көл", "Таш-Көмүр", "Майлуу-Суу", "Ала-Бука", "Аксы", "Чаткал", "Тогуз-Торо"],
@@ -42,7 +39,6 @@ def build_maps():
 
 build_maps()
 
-# ================= DB =================
 DB_PATH = os.getenv("DB_PATH", "taxi.db")
 
 def get_db():
@@ -76,7 +72,6 @@ def auto_clean_loop():
         time.sleep(3600)
         clean_old_records()
 
-# ================= USER STATE =================
 user_data = {}
 
 def set_data(uid, k, v):
@@ -94,7 +89,6 @@ def set_state(uid, state):
 def get_state(uid):
     return get_data(uid).get("state")
 
-# ================= GREEN API =================
 def send_message(chat_id, text):
     url = f"{BASE_URL}/sendMessage/{API_TOKEN}"
     payload = {"chatId": chat_id, "message": text}
@@ -120,42 +114,38 @@ def delete_notification(receipt_id):
     except Exception as e:
         print(f"Delete error: {e}")
 
-# ================= MENU =================
 MAIN_MENU = (
     "🚕 Такси бот — Кош келиңиз!\n\n"
     "Тандаңыз:\n"
-    "1️⃣ — 🚗 Айдоочумун\n"
-    "2️⃣ — 🔍 Жүргүнчүмүн"
+    "1 — Айдоочумун\n"
+    "2 — Жүргүнчүмүн"
 )
 
 def send_main_menu(chat_id):
     send_message(chat_id, MAIN_MENU)
 
 def regions_menu():
-    lines = ["🗺 Облус тандаңыз (номер жазыңыз):\n"]
+    lines = ["Облус тандаңыз (номер жазыңыз):\n"]
     for i, name in enumerate(region_list, 1):
         lines.append(f"{i}. {name}")
     return "\n".join(lines)
 
 def cities_menu(region_name):
     cities = regions.get(region_name, [])
-    lines = [f"📍 {region_name}\nШаар тандаңыз (номер жазыңыз):\n"]
+    lines = [f"{region_name}\nШаар тандаңыз (номер жазыңыз):\n"]
     for i, city in enumerate(cities, 1):
         lines.append(f"{i}. {city}")
     return "\n".join(lines)
 
-# ================= DRIVER FLOW =================
 def handle_driver_flow(chat_id, text, state, data):
     if state == "d_name":
         set_data(chat_id, "name", text)
         set_state(chat_id, "d_car")
-        send_message(chat_id, "🚘 Машинаңыздын маркасы жана модели:")
-
+        send_message(chat_id, "Машинаңыздын маркасы жана модели:")
     elif state == "d_car":
         set_data(chat_id, "car", text)
         set_state(chat_id, "d_route")
-        send_message(chat_id, "Маршрут тандаңыз:\n1️⃣ — 🏙 Бишкекке барам\n2️⃣ — 🌄 Бишкектен кетем")
-
+        send_message(chat_id, "Маршрут тандаңыз:\n1 — Бишкекке барам\n2 — Бишкектен кетем")
     elif state == "d_route":
         if text == "1":
             set_data(chat_id, "to", "Бишкек")
@@ -166,8 +156,7 @@ def handle_driver_flow(chat_id, text, state, data):
             set_state(chat_id, "d_to_region")
             send_message(chat_id, regions_menu())
         else:
-            send_message(chat_id, "❗ 1 же 2 жазыңыз.")
-
+            send_message(chat_id, "1 же 2 жазыңыз.")
     elif state == "d_from_region":
         try:
             idx = int(text) - 1
@@ -176,8 +165,7 @@ def handle_driver_flow(chat_id, text, state, data):
             set_state(chat_id, "d_from_city")
             send_message(chat_id, cities_menu(region))
         except (ValueError, IndexError):
-            send_message(chat_id, "❗ Туура номер жазыңыз.")
-
+            send_message(chat_id, "Туура номер жазыңыз.")
     elif state == "d_from_city":
         region = data.get("d_region")
         cities = regions.get(region, [])
@@ -186,10 +174,9 @@ def handle_driver_flow(chat_id, text, state, data):
             city = cities[idx]
             set_data(chat_id, "from", city)
             set_state(chat_id, "d_time")
-            send_message(chat_id, "⏰ Качан жолго чыгасыз:")
+            send_message(chat_id, "Качан жолго чыгасыз:")
         except (ValueError, IndexError):
-            send_message(chat_id, "❗ Туура номер жазыңыз.")
-
+            send_message(chat_id, "Туура номер жазыңыз.")
     elif state == "d_to_region":
         try:
             idx = int(text) - 1
@@ -198,8 +185,7 @@ def handle_driver_flow(chat_id, text, state, data):
             set_state(chat_id, "d_to_city")
             send_message(chat_id, cities_menu(region))
         except (ValueError, IndexError):
-            send_message(chat_id, "❗ Туура номер жазыңыз.")
-
+            send_message(chat_id, "Туура номер жазыңыз.")
     elif state == "d_to_city":
         region = data.get("d_region")
         cities = regions.get(region, [])
@@ -208,30 +194,25 @@ def handle_driver_flow(chat_id, text, state, data):
             city = cities[idx]
             set_data(chat_id, "to", city)
             set_state(chat_id, "d_time")
-            send_message(chat_id, "⏰ Качан жолго чыгасыз:")
+            send_message(chat_id, "Качан жолго чыгасыз:")
         except (ValueError, IndexError):
-            send_message(chat_id, "❗ Туура номер жазыңыз.")
-
+            send_message(chat_id, "Туура номер жазыңыз.")
     elif state == "d_time":
         set_data(chat_id, "time", text)
         set_state(chat_id, "d_price")
-        send_message(chat_id, "💰 Жол кире акы (сом):")
-
+        send_message(chat_id, "Жол кире акы (сом):")
     elif state == "d_price":
         set_data(chat_id, "price", text)
         set_state(chat_id, "d_seats")
-        send_message(chat_id, "🪑 Бош орун саны:")
-
+        send_message(chat_id, "Бош орун саны:")
     elif state == "d_seats":
         set_data(chat_id, "seats", text)
         set_state(chat_id, "d_phone")
-        send_message(chat_id, "📱 Телефон номериңиз:")
-
+        send_message(chat_id, "Телефон номериңиз:")
     elif state == "d_phone":
         set_data(chat_id, "phone", text)
         set_state(chat_id, "d_comment")
-        send_message(chat_id, "💬 Комментарий (болбосо — сызыкча коюңуз):")
-
+        send_message(chat_id, "Комментарий (болбосо чызыкча коюңуз):")
     elif state == "d_comment":
         set_data(chat_id, "comment", text)
         finish_driver(chat_id)
@@ -241,28 +222,24 @@ def finish_driver(chat_id):
     required = ["name", "car", "from", "to", "time", "price", "phone", "seats"]
     for field in required:
         if field not in data:
-            send_message(chat_id, "❌ Маалымат жетишсиз. Кайрадан баштаңыз.")
+            send_message(chat_id, "Маалымат жетишсиз. Кайрадан баштаңыз.")
             reset(chat_id)
             send_main_menu(chat_id)
             return
-
     clean_old_records()
-
     post_text = (
-        "🚗 АЙДООЧУ\n\n"
-        f"👤 Аты: {data['name']}\n"
-        f"🚘 Машина: {data['car']}\n"
-        f"📍 Маршрут: {data['from']} -> {data['to']}\n"
-        f"⏰ Убакыт: {data['time']}\n"
-        f"💰 Баа: {data['price']} сом\n"
-        f"🪑 Бош орун: {data['seats']}\n"
-        f"📞 Тел: {data['phone']}\n"
-        f"💬 Комментарий: {data.get('comment', '-')}"
+        "АЙДООЧУ\n\n"
+        f"Аты: {data['name']}\n"
+        f"Машина: {data['car']}\n"
+        f"Маршрут: {data['from']} - {data['to']}\n"
+        f"Убакыт: {data['time']}\n"
+        f"Баа: {data['price']} сом\n"
+        f"Бош орун: {data['seats']}\n"
+        f"Тел: {data['phone']}\n"
+        f"Комментарий: {data.get('comment', '-')}"
     )
-
     if GROUP_ID:
         send_message(GROUP_ID, post_text)
-
     conn, c = get_db()
     c.execute("""
         INSERT INTO drivers (name,car,from_city,to_city,time,price,phone,seats,comment,created_at)
@@ -276,12 +253,10 @@ def finish_driver(chat_id):
     ))
     conn.commit()
     conn.close()
-
-    send_message(chat_id, "✅ Маалыматыңыз жазылды!")
+    send_message(chat_id, "Маалыматыңыз жазылды!")
     reset(chat_id)
     send_main_menu(chat_id)
 
-# ================= PASSENGER FLOW =================
 def handle_passenger_flow(chat_id, text, state, data):
     if state == "p_route":
         if text == "1":
@@ -291,8 +266,7 @@ def handle_passenger_flow(chat_id, text, state, data):
             set_state(chat_id, "p_from_region")
             send_message(chat_id, regions_menu())
         else:
-            send_message(chat_id, "❗ 1 же 2 жазыңыз.")
-
+            send_message(chat_id, "1 же 2 жазыңыз.")
     elif state == "p_to_region":
         try:
             idx = int(text) - 1
@@ -303,8 +277,7 @@ def handle_passenger_flow(chat_id, text, state, data):
             reset(chat_id)
             send_main_menu(chat_id)
         except (ValueError, IndexError):
-            send_message(chat_id, "❗ Туура номер жазыңыз.")
-
+            send_message(chat_id, "Туура номер жазыңыз.")
     elif state == "p_from_region":
         try:
             idx = int(text) - 1
@@ -315,65 +288,54 @@ def handle_passenger_flow(chat_id, text, state, data):
             reset(chat_id)
             send_main_menu(chat_id)
         except (ValueError, IndexError):
-            send_message(chat_id, "❗ Туура номер жазыңыз.")
+            send_message(chat_id, "Туура номер жазыңыз.")
 
-# ================= SEARCH =================
 def search_drivers(chat_id, from_cities=None, to_cities=None, region_name=""):
     conn, c = get_db()
-
     if from_cities:
         placeholders = ",".join("?" * len(from_cities))
         c.execute(
             f"SELECT * FROM drivers WHERE from_city IN ({placeholders}) AND to_city='Бишкек'",
             from_cities
         )
-        header = f"🔍 {region_name} -> Бишкек:"
+        header = f"{region_name} - Бишкек:"
     elif to_cities:
         placeholders = ",".join("?" * len(to_cities))
         c.execute(
             f"SELECT * FROM drivers WHERE from_city='Бишкек' AND to_city IN ({placeholders})",
             to_cities
         )
-        header = f"🔍 Бишкек -> {region_name}:"
+        header = f"Бишкек - {region_name}:"
     else:
         conn.close()
         return
-
     rows = c.fetchall()
     conn.close()
-
     if not rows:
-        send_message(chat_id, "❌ Азырынча айдоочу табылган жок.\nКийинчерээк кайра текшериңиз.")
+        send_message(chat_id, "Азырынча айдоочу табылган жок.\nКийинчерээк кайра текшериңиз.")
         return
-
-    send_message(chat_id, f"{header}\n✅ {len(rows)} айдоочу табылды")
-
+    send_message(chat_id, f"{header}\n{len(rows)} айдоочу табылды")
     grouped = defaultdict(list)
     for r in rows:
         key = r[3] if from_cities else r[4]
         grouped[key].append(r)
-
     for city_key, drivers in grouped.items():
         for r in drivers:
             msg = (
-                f"🚗 АЙДООЧУ\n\n"
-                f"👤 Аты: {r[1]}\n"
-                f"🚘 Машина: {r[2]}\n"
-                f"📍 Маршрут: {r[3]} -> {r[4]}\n"
-                f"⏰ Убакыт: {r[5]}\n"
-                f"💰 Баа: {r[6]} сом\n"
-                f"🪑 Орун: {r[8]}\n"
-                f"📞 Тел: {r[7]}\n"
-                f"💬 Комментарий: {r[9]}"
+                f"АЙДООЧУ\n\n"
+                f"Аты: {r[1]}\n"
+                f"Машина: {r[2]}\n"
+                f"Маршрут: {r[3]} - {r[4]}\n"
+                f"Убакыт: {r[5]}\n"
+                f"Баа: {r[6]} сом\n"
+                f"Орун: {r[8]}\n"
+                f"Тел: {r[7]}\n"
+                f"Комментарий: {r[9]}"
             )
             send_message(chat_id, msg)
 
-# ================= MESSAGE HANDLER =================
 def handle_message(chat_id, text):
     text = text.strip()
-    bot_chat_id = f"{ADMIN_PHONE}@c.us"
-    if chat_id == bot_chat_id:
-        return
     state = get_state(chat_id)
     data = get_data(chat_id)
 
@@ -386,11 +348,11 @@ def handle_message(chat_id, text):
         if text == "1":
             reset(chat_id)
             set_state(chat_id, "d_name")
-            send_message(chat_id, "👤 Атыңыз:")
+            send_message(chat_id, "Атыңыз:")
         elif text == "2":
             reset(chat_id)
             set_state(chat_id, "p_route")
-            send_message(chat_id, "Маршрут тандаңыз:\n1️⃣ — 🏙 Бишкекке барам\n2️⃣ — 🌄 Бишкектен кетем")
+            send_message(chat_id, "Маршрут тандаңыз:\n1 — Бишкекке барам\n2 — Бишкектен кетем")
         else:
             send_main_menu(chat_id)
         return
@@ -403,11 +365,10 @@ def handle_message(chat_id, text):
         handle_passenger_flow(chat_id, text, state, data)
         return
 
-# ================= MAIN LOOP =================
 def main():
     init_db()
     threading.Thread(target=auto_clean_loop, daemon=True).start()
-    print("✅ WhatsApp Такси Бот иштеп жатат...")
+    print("WhatsApp Такси Бот иштеп жатат...")
 
     while True:
         notification = receive_notification()
@@ -420,26 +381,25 @@ def main():
 
         try:
             type_webhook = body.get("typeWebhook")
+            print(f"WEBHOOK TYPE: {type_webhook}")
 
-            if type_webhook in ("outgoingMessageReceived", "outgoingAPIMessageReceived"):
+            if type_webhook != "incomingMessageReceived":
                 delete_notification(receipt_id)
                 continue
 
-            print(f"WEBHOOK: {type_webhook} | body: {body}")
-if type_webhook == "incomingMessageReceived":
-    sender = body.get("senderData", {})
-    chat_id = sender.get("chatId")
-    sender_id = sender.get("sender", "")
-    if ADMIN_PHONE in sender_id and chat_id and ADMIN_PHONE in chat_id:
-        delete_notification(receipt_id)
-        continue
-                msg_data = body.get("messageData", {})
-                msg_type = msg_data.get("typeMessage")
+            sender = body.get("senderData", {})
+            chat_id = sender.get("chatId", "")
+            sender_name = sender.get("senderName", "")
+            print(f"FROM: {chat_id} | NAME: {sender_name}")
 
-                if msg_type == "textMessage":
-                    text = msg_data.get("textMessageData", {}).get("textMessage", "")
-                    if chat_id and text:
-                        handle_message(chat_id, text)
+            msg_data = body.get("messageData", {})
+            msg_type = msg_data.get("typeMessage")
+
+            if msg_type == "textMessage":
+                text = msg_data.get("textMessageData", {}).get("textMessage", "")
+                print(f"TEXT: {text}")
+                if chat_id and text:
+                    handle_message(chat_id, text)
 
         except Exception as e:
             print(f"Handler error: {e}")
