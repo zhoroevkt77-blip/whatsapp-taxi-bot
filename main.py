@@ -14,8 +14,8 @@ API_TOKEN = os.getenv("API_TOKEN")
 if not API_TOKEN:
     raise ValueError("API_TOKEN жок!")
 
-GROUP_ID = os.getenv("GROUP_ID")  # WhatsApp группасынын ID (постлор үчүн)
-ADMIN_PHONE = os.getenv("ADMIN_PHONE", "996227155603")  # Админ номери
+GROUP_ID = os.getenv("GROUP_ID")
+ADMIN_PHONE = os.getenv("ADMIN_PHONE", "996227155603")
 
 BASE_URL = f"https://api.green-api.com/waInstance{INSTANCE_ID}"
 
@@ -42,12 +42,6 @@ def build_maps():
 
 build_maps()
 
-def get_city_num(city_name):
-    for num, (name, _) in city_map.items():
-        if name == city_name:
-            return num
-    return None
-
 # ================= DB =================
 DB_PATH = os.getenv("DB_PATH", "taxi.db")
 
@@ -72,7 +66,7 @@ def init_db():
 
 def clean_old_records():
     conn, c = get_db()
-    cutoff = time.time() - 43200  # 12 саат
+    cutoff = time.time() - 43200
     c.execute("DELETE FROM drivers WHERE created_at < ?", (cutoff,))
     conn.commit()
     conn.close()
@@ -255,10 +249,10 @@ def finish_driver(chat_id):
     clean_old_records()
 
     post_text = (
-        "🚗 *АЙДООЧУ*\n\n"
+        "🚗 АЙДООЧУ\n\n"
         f"👤 Аты: {data['name']}\n"
         f"🚘 Машина: {data['car']}\n"
-        f"📍 Маршрут: {data['from']} → {data['to']}\n"
+        f"📍 Маршрут: {data['from']} -> {data['to']}\n"
         f"⏰ Убакыт: {data['time']}\n"
         f"💰 Баа: {data['price']} сом\n"
         f"🪑 Бош орун: {data['seats']}\n"
@@ -266,11 +260,9 @@ def finish_driver(chat_id):
         f"💬 Комментарий: {data.get('comment', '-')}"
     )
 
-    # Группага жибер (эгер GROUP_ID орнотулган болсо)
     if GROUP_ID:
         send_message(GROUP_ID, post_text)
 
-    # DB га сакта
     conn, c = get_db()
     c.execute("""
         INSERT INTO drivers (name,car,from_city,to_city,time,price,phone,seats,comment,created_at)
@@ -335,14 +327,14 @@ def search_drivers(chat_id, from_cities=None, to_cities=None, region_name=""):
             f"SELECT * FROM drivers WHERE from_city IN ({placeholders}) AND to_city='Бишкек'",
             from_cities
         )
-        header = f"🔍 {region_name} → Бишкек:"
+        header = f"🔍 {region_name} -> Бишкек:"
     elif to_cities:
         placeholders = ",".join("?" * len(to_cities))
         c.execute(
             f"SELECT * FROM drivers WHERE from_city='Бишкек' AND to_city IN ({placeholders})",
             to_cities
         )
-        header = f"🔍 Бишкек → {region_name}:"
+        header = f"🔍 Бишкек -> {region_name}:"
     else:
         conn.close()
         return
@@ -363,18 +355,18 @@ def search_drivers(chat_id, from_cities=None, to_cities=None, region_name=""):
 
     for city_key, drivers in grouped.items():
         for r in drivers:
-            text = (
+            msg = (
                 f"🚗 АЙДООЧУ\n\n"
                 f"👤 Аты: {r[1]}\n"
                 f"🚘 Машина: {r[2]}\n"
-                f"📍 Маршрут: {r[3]} → {r[4]}\n"
+                f"📍 Маршрут: {r[3]} -> {r[4]}\n"
                 f"⏰ Убакыт: {r[5]}\n"
                 f"💰 Баа: {r[6]} сом\n"
                 f"🪑 Орун: {r[8]}\n"
                 f"📞 Тел: {r[7]}\n"
                 f"💬 Комментарий: {r[9]}"
             )
-            send_message(chat_id, text)
+            send_message(chat_id, msg)
 
 # ================= MESSAGE HANDLER =================
 def handle_message(chat_id, text):
@@ -382,13 +374,11 @@ def handle_message(chat_id, text):
     state = get_state(chat_id)
     data = get_data(chat_id)
 
-    # Каалаган убакта баштан баштоо
     if text.lower() in ["старт", "start", "баштоо", "меню", "menu", "/start"]:
         reset(chat_id)
         send_main_menu(chat_id)
         return
 
-    # Башкы меню
     if state is None:
         if text == "1":
             reset(chat_id)
@@ -402,12 +392,10 @@ def handle_message(chat_id, text):
             send_main_menu(chat_id)
         return
 
-    # Айдоочу flow
     if state.startswith("d_"):
         handle_driver_flow(chat_id, text, state, data)
         return
 
-    # Жүргүнчү flow
     if state.startswith("p_"):
         handle_passenger_flow(chat_id, text, state, data)
         return
@@ -430,10 +418,11 @@ def main():
         try:
             type_webhook = body.get("typeWebhook")
 
-.   if type_webhook in ("outgoingMessageReceived", "outgoingAPIMessageReceived"):
-    delete_notification(receipt_id)
-    continue
-    if type_webhook == "incomingMessageReceived":
+            if type_webhook in ("outgoingMessageReceived", "outgoingAPIMessageReceived"):
+                delete_notification(receipt_id)
+                continue
+
+            if type_webhook == "incomingMessageReceived":
                 sender = body.get("senderData", {})
                 chat_id = sender.get("chatId")
                 msg_data = body.get("messageData", {})
