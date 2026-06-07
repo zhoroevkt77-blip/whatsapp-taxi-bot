@@ -371,6 +371,9 @@ def search_drivers(chat_id, from_cities=None, to_cities=None, region_name=""):
 # ================= MESSAGE HANDLER =================
 def handle_message(chat_id, text):
     text = text.strip()
+    bot_chat_id = f"{ADMIN_PHONE}@c.us"
+    if chat_id == bot_chat_id:
+        return
     state = get_state(chat_id)
     data = get_data(chat_id)
 
